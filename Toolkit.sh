@@ -6,18 +6,22 @@
 
 setup_gitignore() {
     local script_name
+    local context_file="ai-context.txt"
     script_name=$(basename "$0")
     
-    if [ -f .gitignore ]; then
-        if ! grep -qF "$script_name" .gitignore; then
-            echo "$script_name" >> .gitignore
-            echo "[Proteção] Script '$script_name' anexado ao .gitignore existente."
-        else
-            echo "[Proteção] Script '$script_name' já estava protegido no .gitignore."
-        fi
-    else
-        echo "$script_name" > .gitignore
-        echo "[Proteção] Arquivo .gitignore criado e configurado com sucesso."
+    if [ ! -f .gitignore ]; then
+        touch .gitignore
+        echo "[Proteção] Arquivo .gitignore criado."
+    fi
+
+    if ! grep -qF "$script_name" .gitignore; then
+        echo "$script_name" >> .gitignore
+        echo "[Proteção] Script '$script_name' protegido."
+    fi
+
+    if ! grep -qF "$context_file" .gitignore; then
+        echo "$context_file" >> .gitignore
+        echo "[Proteção] Arquivo de contexto '$context_file' protegido."
     fi
 }
 
@@ -327,6 +331,55 @@ EOF
     read -p "Pressione [ENTER] para voltar..."
 }
 
+generate_ai_context() {
+    clear
+    echo "=============================="
+    echo "      AI Context Builder"
+    echo "=============================="
+
+    if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+        echo "Erro: Este diretório não tem um repositório Git."
+        echo "A leitura da árvore de arquivos depende do Git para respeitar o .gitignore."
+        echo ""
+        read -p "Pressione [ENTER] para voltar..."
+        return
+    fi
+
+    local context_file="ai-context.txt"
+    
+    echo "Construindo árvore estrutural do projeto..."
+    echo "================ PROJECT STRUCTURE ================" > "$context_file"
+    
+    # Prática profissional: Utilizar o git ls-files garante uma listagem plana e limpa.
+    # --cached: inclui arquivos já rastreados.
+    # --others: inclui arquivos novos não rastreados.
+    # --exclude-standard: aplica as regras do .gitignore para filtrar a lista.
+    git ls-files --cached --others --exclude-standard >> "$context_file"
+    
+    echo "" >> "$context_file"
+    echo "Consolidando arquivos de documentação..."
+    echo "================ DOCUMENTATION ====================" >> "$context_file"
+
+    if [ -f README.md ]; then
+        echo -e "\n--- File: README.md ---\n" >> "$context_file"
+        cat README.md >> "$context_file"
+    fi
+
+    if [ -d docs ]; then
+        for md_file in docs/*.md; do
+            if [ -f "$md_file" ]; then
+                echo -e "\n--- File: $md_file ---\n" >> "$context_file"
+                cat "$md_file" >> "$context_file"
+            fi
+        done
+    fi
+
+    echo "----------------------------------------"
+    echo "Sucesso! Arquivo '$context_file' gerado na raiz do projeto."
+    echo "Abra o arquivo para copiar o contexto unificado para a IA."
+    echo ""
+    read -p "Pressione [ENTER] para voltar..."
+}
 
 # ==========================================
 # Submenus
@@ -379,6 +432,7 @@ docs_menu() {
         echo "=============================="
         echo "1. Iniciar Documentação"
         echo "2. Exibir Modelo de Referência"
+        echo "3. Gerar Contexto para IA"
         echo "[ESC] Voltar ao Menu Principal"
         echo "=============================="
         echo -n "Escolha uma opção: "
@@ -397,6 +451,7 @@ docs_menu() {
         case $selection in
             1) init_documentation ;;
             2) show_documentation_model ;;
+            3) generate_ai_context ;;
             *) echo -e "\nOpção inválida."; sleep 1 ;;
         esac
     done
