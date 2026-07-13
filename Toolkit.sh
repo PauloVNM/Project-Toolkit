@@ -97,16 +97,18 @@ pull_updates() {
     echo "Verificando e recebendo atualizações remotas..."
     echo "----------------------------------------"
     
-    # Executa a sincronização trazendo os dados do remoto para a branch atual
-    if git pull origin HEAD; then
+    # Executa a sincronização forçando a estratégia padrão de mesclagem (merge)
+    # Isso evita o erro fatal de "divergent branches"
+    if git pull --no-rebase origin HEAD; then
         echo "----------------------------------------"
         echo "Atualizações recebidas e integradas com sucesso."
     else
         echo "----------------------------------------"
         echo "Aviso: Ocorreu um erro ao sincronizar."
-        echo "Isso pode acontecer por conflitos de mesclagem (merge) que precisam"
-        echo "ser resolvidos manualmente no VS Code, ou caso o histórico remoto seja"
-        echo "completamente diferente do local."
+        echo "Isso geralmente acontece quando há conflitos de código (o mesmo arquivo"
+        echo "foi alterado de formas diferentes no local e no remoto)."
+        echo "Abra o VS Code, resolva os conflitos destacados nos arquivos e,"
+        echo "em seguida, use a opção de 'Enviar Atualizações' para concluir."
     fi
 
     echo ""
