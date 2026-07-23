@@ -4,12 +4,38 @@
 # Helper Functions
 # ==========================================
 
+print_header() {
+    clear
+    echo "=============================="
+    echo "   $1"
+    echo "=============================="
+}
+
+print_separator() {
+    echo "----------------------------------------"
+}
+
+pause_prompt() {
+    echo ""
+    read -p "Pressione [ENTER] para voltar..."
+}
+
+check_git_repo() {
+    if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+        echo "Erro: Este diretório não tem um repositório Git."
+        pause_prompt
+        return 1
+    fi
+    return 0
+}
+
 setup_gitignore() {
     local script_name
-    local context_file="ai-context.txt"
+    local context_docs="ai-context-docs.txt"
+    local context_code="ai-context-code.txt"
     script_name=$(basename "$0")
     
-    if [ ! -f .gitignore ]; then
+    if [[ ! -f .gitignore ]]; then
         touch .gitignore
         echo "[Proteção] Arquivo .gitignore criado."
     fi
@@ -19,9 +45,14 @@ setup_gitignore() {
         echo "[Proteção] Script '$script_name' protegido."
     fi
 
-    if ! grep -qF "$context_file" .gitignore; then
-        echo "$context_file" >> .gitignore
-        echo "[Proteção] Arquivo de contexto '$context_file' protegido."
+    if ! grep -qF "$context_docs" .gitignore; then
+        echo "$context_docs" >> .gitignore
+        echo "[Proteção] Arquivo de contexto de docs protegido."
+    fi
+
+    if ! grep -qF "$context_code" .gitignore; then
+        echo "$context_code" >> .gitignore
+        echo "[Proteção] Arquivo de contexto de código protegido."
     fi
 }
 
@@ -30,10 +61,7 @@ setup_gitignore() {
 # ==========================================
 
 init_repository() {
-    clear
-    echo "=============================="
-    echo "   Iniciar Novo Repositório"
-    echo "=============================="
+    print_header "Iniciar Novo Repositório"
     echo "Configurando base local..."
     
     git init -b main
@@ -44,21 +72,13 @@ init_repository() {
 
     echo "Repositório local iniciado na branch 'main'."
     echo "Pronto para o seu primeiro commit estrutural."
-    echo ""
-    read -p "Pressione [ENTER] para voltar..."
+    pause_prompt
 }
 
 link_remote() {
-    clear
-    echo "=============================="
-    echo "   Vincular Repositório Remoto"
-    echo "=============================="
-
-    if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
-        echo "Erro: Este diretório não tem um repositório Git."
-        read -p "Pressione [ENTER] para voltar..."
-        return
-    fi
+    print_header "Vincular Repositório Remoto"
+    
+    check_git_repo || return
 
     while true; do
         local url
@@ -81,33 +101,24 @@ link_remote() {
         fi
     done
     
-    echo ""
-    read -p "Pressione [ENTER] para voltar..."
+    pause_prompt
 }
 
 pull_updates() {
-    clear
-    echo "=============================="
-    echo "     Receber Atualizações"
-    echo "=============================="
-
-    if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
-        echo "Erro: Este diretório não tem um repositório Git."
-        echo ""
-        read -p "Pressione [ENTER] para voltar..."
-        return
-    fi
+    print_header "Receber Atualizações"
+    
+    check_git_repo || return
 
     echo "Verificando e recebendo atualizações remotas..."
-    echo "----------------------------------------"
+    print_separator
     
     # Executa a sincronização forçando a estratégia padrão de mesclagem (merge)
     # Isso evita o erro fatal de "divergent branches"
     if git pull --no-rebase origin HEAD; then
-        echo "----------------------------------------"
+        print_separator
         echo "Atualizações recebidas e integradas com sucesso."
     else
-        echo "----------------------------------------"
+        print_separator
         echo "Aviso: Ocorreu um erro ao sincronizar."
         echo "Isso geralmente acontece quando há conflitos de código (o mesmo arquivo"
         echo "foi alterado de formas diferentes no local e no remoto)."
@@ -115,21 +126,13 @@ pull_updates() {
         echo "em seguida, use a opção de 'Enviar Atualizações' para concluir."
     fi
 
-    echo ""
-    read -p "Pressione [ENTER] para voltar ao menu..."
+    pause_prompt
 }
 
 push_updates() {
-    clear
-    echo "=============================="
-    echo "      Enviar Atualizações"
-    echo "=============================="
-
-    if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
-        echo "Erro: Este diretório não tem um repositório Git."
-        read -p "Pressione [ENTER] para voltar..."
-        return
-    fi
+    print_header "Enviar Atualizações"
+    
+    check_git_repo || return
 
     git status -s
     
@@ -148,20 +151,16 @@ push_updates() {
     git commit -m "$final_msg"
     git push -u origin HEAD
     
-    echo ""
-    read -p "Pressione [ENTER] para voltar..."
+    pause_prompt
 }
 
 show_overview() {
-    clear
-    echo "=============================="
-    echo "         Visão Geral"
-    echo "=============================="
+    print_header "Visão Geral"
 
     local current_dir
     current_dir=$(pwd)
     echo "Diretório Atual: $current_dir"
-    echo "----------------------------------------"
+    print_separator
 
     local user_name
     local user_email
@@ -182,10 +181,9 @@ show_overview() {
     else
         echo "Status Git:     Este diretório NÃO é um repositório Git."
     fi
-    echo "----------------------------------------"
+    print_separator
     
-    echo ""
-    read -p "Pressione [ENTER] para voltar..."
+    pause_prompt
 }
 
 # ==========================================
@@ -193,12 +191,9 @@ show_overview() {
 # ==========================================
 
 init_documentation() {
-    clear
-    echo "=============================="
-    echo "    Iniciar Documentação"
-    echo "=============================="
+    print_header "Iniciar Documentação"
     echo "Verificando estrutura do projeto..."
-    echo "----------------------------------------"
+    print_separator
 
     # Passo 1: Checagem do README.md na raiz
     if [ ! -f README.md ]; then
@@ -238,10 +233,9 @@ init_documentation() {
         fi
     done
 
-    echo "----------------------------------------"
+    print_separator
     echo "Estrutura de documentação validada e pronta."
-    echo ""
-    read -p "Pressione [ENTER] para voltar..."
+    pause_prompt
 }
 
 show_documentation_model() {
@@ -327,58 +321,107 @@ project/
 │       ├── security-tradeoffs          # Riscos aceitos, proteções ignoradas e cenários onde atalhos temporários foram assumidos
 │       └── rejected-ideas              # Alternativas que foram consideradas e descartadas, poupando o tempo de reavaliá-las no futuro
 EOF
-    echo ""
-    read -p "Pressione [ENTER] para voltar..."
+    pause_prompt
 }
 
-generate_ai_context() {
-    clear
-    echo "=============================="
-    echo "      AI Context Builder"
-    echo "=============================="
+generate_docs_context() {
+    print_header "AI Context: Documentação"
 
-    if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
-        echo "Erro: Este diretório não tem um repositório Git."
-        echo "A leitura da árvore de arquivos depende do Git para respeitar o .gitignore."
-        echo ""
-        read -p "Pressione [ENTER] para voltar..."
-        return
-    fi
+    check_git_repo || return
 
-    local context_file="ai-context.txt"
+    local context_file="ai-context-docs.txt"
     
     echo "Construindo árvore estrutural do projeto..."
     echo "================ PROJECT STRUCTURE ================" > "$context_file"
-    
-    # Prática profissional: Utilizar o git ls-files garante uma listagem plana e limpa.
-    # --cached: inclui arquivos já rastreados.
-    # --others: inclui arquivos novos não rastreados.
-    # --exclude-standard: aplica as regras do .gitignore para filtrar a lista.
     git ls-files --cached --others --exclude-standard >> "$context_file"
     
     echo "" >> "$context_file"
     echo "Consolidando arquivos de documentação..."
     echo "================ DOCUMENTATION ====================" >> "$context_file"
 
-    if [ -f README.md ]; then
+    if [[ -f README.md ]]; then
         echo -e "\n--- File: README.md ---\n" >> "$context_file"
         cat README.md >> "$context_file"
     fi
 
-    if [ -d docs ]; then
+    if [[ -d docs ]]; then
+        shopt -s nullglob
         for md_file in docs/*.md; do
-            if [ -f "$md_file" ]; then
+            if [[ -f "$md_file" ]]; then
                 echo -e "\n--- File: $md_file ---\n" >> "$context_file"
                 cat "$md_file" >> "$context_file"
             fi
         done
+        shopt -u nullglob
     fi
 
-    echo "----------------------------------------"
-    echo "Sucesso! Arquivo '$context_file' gerado na raiz do projeto."
-    echo "Abra o arquivo para copiar o contexto unificado para a IA."
-    echo ""
-    read -p "Pressione [ENTER] para voltar..."
+    print_separator
+    echo "Sucesso! Arquivo '$context_file' gerado na raiz."
+    echo "Use-o para dar contexto de negócio/arquitetura para a IA."
+    pause_prompt
+}
+
+generate_code_context() {
+    print_header "AI Context: Código"
+
+    check_git_repo || return
+
+    # Identifica os diretórios de código-fonte e estáticos
+    local target_dirs=()
+    
+    if [[ -d "public" ]]; then
+    target_dirs+=("public")
+    fi
+
+    if [[ -d "src" ]]; then
+        target_dirs+=("src")
+    elif [[ -d "source" ]]; then
+        target_dirs+=("source")
+    fi
+
+    if [[ ${#target_dirs[@]} -eq 0 ]]; then
+        echo "Erro: Nenhum diretório 'src', 'source' ou 'public' encontrado."
+        pause_prompt
+        return
+    fi
+
+    local context_file="ai-context-code.txt"
+    
+    echo "Construindo árvore estrutural do projeto..."
+    echo "================ PROJECT STRUCTURE ================" > "$context_file"
+    git ls-files --cached --others --exclude-standard >> "$context_file"
+    
+    echo "" >> "$context_file"
+    echo "Consolidando arquivos de código..."
+    echo "================ SOURCE CODE ====================" >> "$context_file"
+
+    # Inclui explicitamente o .gitignore para dar contexto sobre o ambiente (ex: .env, pastas de build)
+    if [[ -f .gitignore ]]; then
+        echo -e "\n--- File: .gitignore ---\n" >> "$context_file"
+        cat .gitignore >> "$context_file"
+    fi
+
+    # Itera sobre os diretórios encontrados e captura arquivos não ignorados
+    for dir in "${target_dirs[@]}"; do
+        local files=($(git ls-files --cached --others --exclude-standard "$dir/"))
+        
+        if [[ ${#files[@]} -eq 0 ]]; then
+            echo "Nenhum arquivo válido encontrado em '$dir/'."
+        else
+            for file in "${files[@]}"; do
+                if [[ -f "$file" ]]; then
+                    echo -e "\n--- File: $file ---\n" >> "$context_file"
+                    cat "$file" >> "$context_file"
+                fi
+            done
+        fi
+    done
+
+    print_separator
+    echo "Sucesso! Arquivo '$context_file' gerado na raiz."
+    echo "Diretórios incluídos: ${target_dirs[*]}"
+    echo "Use-o para dar contexto de implementação para a IA."
+    pause_prompt
 }
 
 # ==========================================
@@ -388,10 +431,7 @@ generate_ai_context() {
 git_menu() {
     local selection
     while true; do
-        clear
-        echo "=============================="
-        echo "       Git Management"
-        echo "=============================="
+        print_header "Git Management"
         echo "1. Iniciar Repositório Local"
         echo "2. Vincular Repositório Remoto"
         echo "3. Receber Atualizações (Pull)"
@@ -426,13 +466,11 @@ git_menu() {
 docs_menu() {
     local selection
     while true; do
-        clear
-        echo "=============================="
-        echo "    Documentation Tools"
-        echo "=============================="
+        print_header "Documentation Tools"
         echo "1. Iniciar Documentação"
         echo "2. Exibir Modelo de Referência"
-        echo "3. Gerar Contexto para IA"
+        echo "3. Gerar Contexto para IA (Documentação)"
+        echo "4. Gerar Contexto para IA (Código)"
         echo "[ESC] Voltar ao Menu Principal"
         echo "=============================="
         echo -n "Escolha uma opção: "
@@ -451,7 +489,8 @@ docs_menu() {
         case $selection in
             1) init_documentation ;;
             2) show_documentation_model ;;
-            3) generate_ai_context ;;
+            3) generate_docs_context ;;
+            4) generate_code_context ;;
             *) echo -e "\nOpção inválida."; sleep 1 ;;
         esac
     done
@@ -464,10 +503,7 @@ docs_menu() {
 main_menu() {
     local selection
     while true; do
-        clear
-        echo "=============================="
-        echo "       Project Toolkit"
-        echo "=============================="
+        print_header "Project Toolkit"
         echo "1. Git Management"
         echo "2. Documentation Tools"
         echo "[ESC] Sair"
