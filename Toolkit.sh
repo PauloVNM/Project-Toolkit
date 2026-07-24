@@ -182,8 +182,8 @@ show_overview() {
     user_name=$(git config user.name)
     user_email=$(git config user.email)
 
-    echo "Usuário Git:    ${user_name:-'Não configurado'}"
-    echo "E-mail Git:     ${user_email:-'Não configurado'}"
+    echo "Usuário Git:      ${user_name:-'Não configurado'}"
+    echo "E-mail Git:       ${user_email:-'Não configurado'}"
 
     if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
         local current_branch
@@ -191,10 +191,40 @@ show_overview() {
         current_branch=$(git branch --show-current)
         remote_url=$(git config --get remote.origin.url)
 
-        echo "Branch Ativa:   ${current_branch:-'Nenhuma branch ativa (HEAD destacada)'}"
-        echo "Remoto (origin): ${remote_url:-'Nenhum repositório remoto vinculado'}"
+        local last_commit
+        last_commit=$(git log -1 --format="%s (%cr)" 2>/dev/null)
+        if [[ -z "$last_commit" ]]; then
+            last_commit="Nenhum commit encontrado."
+        fi
+
+        git fetch -q 2>/dev/null
+
+        local sync_status
+        if git rev-parse "@{u}" > /dev/null 2>&1; then
+            local ahead
+            local behind
+            ahead=$(git rev-list --count @{u}..HEAD)
+            behind=$(git rev-list --count HEAD..@{u})
+
+            if [[ "$ahead" -eq 0 && "$behind" -eq 0 ]]; then
+                sync_status="Sincronizado com os commits do servidor"
+            elif [[ "$ahead" -gt 0 && "$behind" -eq 0 ]]; then
+                sync_status="Adiantado: $ahead commit(s) (Use Push)"
+            elif [[ "$ahead" -eq 0 && "$behind" -gt 0 ]]; then
+                sync_status="Atrasado: $behind commit(s) (Use Pull)"
+            else
+                sync_status="Divergente: $ahead adiantado(s) e $behind atrasado(s)"
+            fi
+        else
+            sync_status="Sem ramificação remota configurada."
+        fi
+
+        echo "Branch Ativa:     ${current_branch:-'Nenhuma branch ativa (HEAD destacada)'}"
+        echo "Remoto (origin):  ${remote_url:-'Nenhum repositório remoto vinculado'}"
+        echo "Status Sincronia: $sync_status"
+        echo "Último Commit:    $last_commit"
     else
-        echo "Status Git:     Este diretório NÃO é um repositório Git."
+        echo "Status Git:       Este diretório NÃO é um repositório Git."
     fi
     print_separator
     
