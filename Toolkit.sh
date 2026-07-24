@@ -192,66 +192,144 @@ push_updates() {
     pause_prompt
 }
 
-show_overview() {
-    print_header "Visão Geral"
+manage_state() {
+    while true; do
+        print_header "Visão Geral"
 
-    local current_dir
-    current_dir=$(pwd)
-    echo "Diretório Atual: $current_dir"
-    print_separator
+        local current_dir
+        current_dir=$(pwd)
+        echo "Diretório Atual: $current_dir"
+        print_separator
 
-    local user_name
-    local user_email
-    user_name=$(git config user.name)
-    user_email=$(git config user.email)
+        local user_name
+        local user_email
+        user_name=$(git config user.name)
+        user_email=$(git config user.email)
 
-    echo "Usuário Git:      ${user_name:-'Não configurado'}"
-    echo "E-mail Git:       ${user_email:-'Não configurado'}"
+        echo "Usuário Git:      ${user_name:-'Não configurado'}"
+        echo "E-mail Git:       ${user_email:-'Não configurado'}"
 
-    if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
-        local current_branch
-        local remote_url
-        current_branch=$(git branch --show-current)
-        remote_url=$(git config --get remote.origin.url)
+        if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+            local current_branch
+            local remote_url
+            current_branch=$(git branch --show-current)
+            remote_url=$(git config --get remote.origin.url)
 
-        local last_commit
-        last_commit=$(git log -1 --format="%s (%cr)" 2>/dev/null)
-        if [[ -z "$last_commit" ]]; then
-            last_commit="Nenhum commit encontrado."
-        fi
-
-        git fetch -q 2>/dev/null
-
-        local sync_status
-        if git rev-parse "@{u}" > /dev/null 2>&1; then
-            local ahead
-            local behind
-            ahead=$(git rev-list --count @{u}..HEAD)
-            behind=$(git rev-list --count HEAD..@{u})
-
-            if [[ "$ahead" -eq 0 && "$behind" -eq 0 ]]; then
-                sync_status="Sincronizado com os commits do servidor"
-            elif [[ "$ahead" -gt 0 && "$behind" -eq 0 ]]; then
-                sync_status="Adiantado: $ahead commit(s) (Use Push)"
-            elif [[ "$ahead" -eq 0 && "$behind" -gt 0 ]]; then
-                sync_status="Atrasado: $behind commit(s) (Use Pull)"
-            else
-                sync_status="Divergente: $ahead adiantado(s) e $behind atrasado(s)"
+            local last_commit
+            last_commit=$(git log -1 --format="%s (%cr)" 2>/dev/null)
+            if [[ -z "$last_commit" ]]; then
+                last_commit="Nenhum commit encontrado."
             fi
+
+            git fetch -q 2>/dev/null
+
+            local sync_status
+            if git rev-parse "@{u}" > /dev/null 2>&1; then
+                local ahead
+                local behind
+                ahead=$(git rev-list --count @{u}..HEAD)
+                behind=$(git rev-list --count HEAD..@{u})
+
+                if [[ "$ahead" -eq 0 && "$behind" -eq 0 ]]; then
+                    sync_status="Sincronizado com os commits do servidor"
+                elif [[ "$ahead" -gt 0 && "$behind" -eq 0 ]]; then
+                    sync_status="Adiantado: $ahead commit(s) (Use Push)"
+                elif [[ "$ahead" -eq 0 && "$behind" -gt 0 ]]; then
+                    sync_status="Atrasado: $behind commit(s) (Use Pull)"
+                else
+                    sync_status="Divergente: $ahead adiantado(s) e $behind atrasado(s)"
+                fi
+            else
+                sync_status="Sem ramificação remota configurada."
+            fi
+
+            echo "Branch Ativa:     ${current_branch:-'Nenhuma branch ativa (HEAD destacada)'}"
+            echo "Remoto (origin):  ${remote_url:-'Nenhum repositório remoto vinculado'}"
+            echo "Status Sincronia: $sync_status"
+            echo "Último Commit:    $last_commit"
         else
-            sync_status="Sem ramificação remota configurada."
+            echo "Status Git:       Este diretório NÃO é um repositório Git."
+        fi
+        print_separator
+
+        echo "1. Alterar Usuário Git"
+        echo "2. Alterar E-mail Git"
+        echo "3. Alterar Repositório Remoto"
+        echo "4. Trocar ou Criar Branch"
+        echo "[ESC] Voltar"
+        
+        local selection
+        read -r -s -n 1 selection
+
+        if [[ "$selection" == $'\e' ]]; then
+            read -r -s -t 0.05 -n 2 extra_chars
+            if [[ -z "$extra_chars" ]]; then
+                return
+            else
+                continue
+            fi
         fi
 
-        echo "Branch Ativa:     ${current_branch:-'Nenhuma branch ativa (HEAD destacada)'}"
-        echo "Remoto (origin):  ${remote_url:-'Nenhum repositório remoto vinculado'}"
-        echo "Status Sincronia: $sync_status"
-        echo "Último Commit:    $last_commit"
-    else
-        echo "Status Git:       Este diretório NÃO é um repositório Git."
-    fi
-    print_separator
-    
-    pause_prompt
+        case $selection in
+            1)
+                echo ""
+                local new_name
+                read -p "Novo Nome: " new_name
+                if [[ -n "$new_name" ]]; then
+                    git config --local user.name "$new_name"
+                fi
+                ;;
+            2)
+                echo ""
+                local new_email
+                read -p "Novo E-mail: " new_email
+                if [[ -n "$new_email" ]]; then
+                    git config --local user.email "$new_email"
+                fi
+                ;;
+            3)
+                echo ""
+                link_remote
+                ;;
+            4)
+                echo ""
+                if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+                    local branches
+                    mapfile -t branches < <(git branch --format="%(refname:short)")
+                    
+                    local i=1
+                    for b in "${branches[@]}"; do
+                        echo "$i) $b"
+                        ((i++))
+                    done
+                    echo "N) Criar Nova Branch"
+                    
+                    local branch_choice
+                    read -p "Escolha a branch: " branch_choice
+                    
+                    if [[ "$branch_choice" == "N" || "$branch_choice" == "n" ]]; then
+                        local new_b
+                        read -p "Nome da nova branch: " new_b
+                        if [[ -n "$new_b" ]]; then
+                            git switch -c "$new_b" 2>/dev/null
+                        fi
+                    elif [[ "$branch_choice" =~ ^[0-9]+$ ]] && [ "$branch_choice" -ge 1 ] && [ "$branch_choice" -le "${#branches[@]}" ]; then
+                        git switch "${branches[$((branch_choice-1))]}" 2>/dev/null
+                    else
+                        echo "Opção inválida."
+                        sleep 1
+                    fi
+                else
+                    echo "Erro: Este comando exige um repositório Git ativo."
+                    sleep 1
+                fi
+                ;;
+            *)
+                echo -e "\nOpção inválida."
+                sleep 1
+                ;;
+        esac
+    done
 }
 
 # ==========================================
@@ -512,7 +590,7 @@ git_menu() {
         echo "2. Vincular ou Alterar Rep. Remoto"
         echo "3. Receber Atualizações (Pull)"
         echo "4. Enviar Atualizações (Push)"
-        echo "5. Visão Geral (Status)"
+        echo "5. Gerenciar Estado do Repositório"
         echo "[ESC] Voltar ao Menu Principal"
         echo "=============================="
         echo -n "Escolha uma opção: "
@@ -533,7 +611,7 @@ git_menu() {
             2) link_remote ;;
             3) pull_updates ;;
             4) push_updates ;;
-            5) show_overview ;;
+            5) manage_state ;;
             *) echo -e "\nOpção inválida."; sleep 1 ;;
         esac
     done
