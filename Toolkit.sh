@@ -30,29 +30,22 @@ check_git_repo() {
 }
 
 setup_gitignore() {
-    local script_name
-    local context_docs="ai-context-docs.txt"
-    local context_code="ai-context-code.txt"
-    script_name=$(basename "$0")
+    local script_name=$(basename "$0")
     
     if [[ ! -f .gitignore ]]; then
         touch .gitignore
         echo "[Proteção] Arquivo .gitignore criado."
     fi
 
-    if ! grep -qF "$script_name" .gitignore; then
-        echo "$script_name" >> .gitignore
-        echo "[Proteção] Script '$script_name' protegido."
-    fi
-
-    if ! grep -qF "$context_docs" .gitignore; then
-        echo "$context_docs" >> .gitignore
-        echo "[Proteção] Arquivo de contexto de docs protegido."
-    fi
-
-    if ! grep -qF "$context_code" .gitignore; then
-        echo "$context_code" >> .gitignore
-        echo "[Proteção] Arquivo de contexto de código protegido."
+    if ! grep -qF "# === Toolkit Protection ===" .gitignore; then
+        {
+            echo "# === Toolkit Protection ==="
+            echo "$script_name"
+            echo "ai-context-docs.txt"
+            echo "ai-context-code.txt"
+            echo "# =========================="
+        } >> .gitignore
+        echo "[Proteção] Bloco do Toolkit adicionado ao .gitignore."
     fi
 }
 
@@ -66,10 +59,6 @@ init_repository() {
     
     git init -b main
     
-    echo ""
-    setup_gitignore
-    echo ""
-
     echo "Repositório local iniciado na branch 'main'."
     echo "Pronto para o seu primeiro commit estrutural."
     pause_prompt
@@ -235,6 +224,14 @@ init_documentation() {
 
     print_separator
     echo "Estrutura de documentação validada e pronta."
+    setup_gitignore
+    pause_prompt
+}
+
+update_project_gitignore() {
+    print_header "Atualizar .gitignore do Projeto"
+    check_git_repo || return
+    setup_gitignore
     pause_prompt
 }
 
@@ -468,9 +465,10 @@ docs_menu() {
     while true; do
         print_header "Documentation Tools"
         echo "1. Iniciar Documentação"
-        echo "2. Exibir Modelo de Referência"
-        echo "3. Gerar Contexto para IA (Documentação)"
-        echo "4. Gerar Contexto para IA (Código)"
+        echo "2. Atualizar .gitignore (Projetos Existentes)"
+        echo "3. Exibir Modelo de Referência"
+        echo "4. Gerar Contexto para IA (Documentação)"
+        echo "5. Gerar Contexto para IA (Código)"
         echo "[ESC] Voltar ao Menu Principal"
         echo "=============================="
         echo -n "Escolha uma opção: "
@@ -488,9 +486,10 @@ docs_menu() {
 
         case $selection in
             1) init_documentation ;;
-            2) show_documentation_model ;;
-            3) generate_docs_context ;;
-            4) generate_code_context ;;
+            2) update_project_gitignore ;;
+            3) show_documentation_model ;;
+            4) generate_docs_context ;;
+            5) generate_code_context ;;
             *) echo -e "\nOpção inválida."; sleep 1 ;;
         esac
     done
