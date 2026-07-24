@@ -55,6 +55,13 @@ setup_gitignore() {
 
 init_repository() {
     print_header "Iniciar Novo Repositório"
+
+    if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+        echo "Aviso: Este diretório já possui um repositório Git iniciado."
+        pause_prompt
+        return
+    fi
+
     echo "Configurando base local..."
     
     git init -b main
@@ -65,7 +72,7 @@ init_repository() {
 }
 
 link_remote() {
-    print_header "Vincular Repositório Remoto"
+    print_header "Vincular ou Alterar Repositório Remoto"
     
     check_git_repo || return
 
@@ -98,6 +105,12 @@ pull_updates() {
     
     check_git_repo || return
 
+    if [ -z "$(git config --get remote.origin.url)" ]; then
+        echo "Erro: Nenhum repositório remoto vinculado. Use a opção de vincular repositório primeiro."
+        pause_prompt
+        return
+    fi
+
     echo "Verificando e recebendo atualizações remotas..."
     print_separator
     
@@ -125,8 +138,15 @@ push_updates() {
 
     git status -s
     
+    local has_remote
+    has_remote=$(git config --get remote.origin.url)
+    
     local user_confirmation
-    read -p "Deseja indexar e enviar as alterações? (y/N): " user_confirmation
+    if [ -n "$has_remote" ]; then
+        read -p "Deseja indexar e enviar as alterações ao servidor? (y/N): " user_confirmation
+    else
+        read -p "Nenhum repositório remoto vinculado. Deseja indexar e salvar as alterações APENAS LOCALMENTE? (y/N): " user_confirmation
+    fi
     
     if [[ ! "$user_confirmation" =~ ^[Yy]$ ]]; then
         return
@@ -164,7 +184,10 @@ push_updates() {
     
     git add .
     git commit -m "$final_msg"
-    git push -u origin HEAD
+    
+    if [ -n "$has_remote" ]; then
+        git push -u origin HEAD
+    fi
     
     pause_prompt
 }
@@ -486,7 +509,7 @@ git_menu() {
     while true; do
         print_header "Git Management"
         echo "1. Iniciar Repositório Local"
-        echo "2. Vincular Repositório Remoto"
+        echo "2. Vincular ou Alterar Rep. Remoto"
         echo "3. Receber Atualizações (Pull)"
         echo "4. Enviar Atualizações (Push)"
         echo "5. Visão Geral (Status)"
