@@ -132,9 +132,35 @@ push_updates() {
         return
     fi
 
+    echo "1. feat: (Novidades e melhorias)"
+    echo "2. fix: (Correção de erros)"
+    echo "3. docs: (Atualização de documentos)"
+    echo "4. refactor: (Melhorias no código existente)"
+    echo "5. perf: (Melhoria do desempenho)"
+    echo "6. test: (Adição ou correção de testes automatizados)"
+
+    local selection
+    local commit_prefix
+    while true; do
+        echo -n "Escolha uma opção: "
+        read -r -s -n 1 selection
+        
+        case $selection in
+            1) commit_prefix="feat:"; echo ""; break ;;
+            2) commit_prefix="fix:"; echo ""; break ;;
+            3) commit_prefix="docs:"; echo ""; break ;;
+            4) commit_prefix="refactor:"; echo ""; break ;;
+            5) commit_prefix="perf:"; echo ""; break ;;
+            6) commit_prefix="test:"; echo ""; break ;;
+            *) echo -e "\nOpção inválida."; sleep 1 ;;
+        esac
+    done
+
     local commit_msg
-    read -p "Digite a mensagem do commit (vazio para data): " commit_msg
-    local final_msg=${commit_msg:-"Auto-commit: $(date '+%Y-%m-%d %H:%M:%S')"}
+    read -p "Digite a mensagem para '$commit_prefix' (vazio para data): " commit_msg
+    
+    local evaluated_message=${commit_msg:-"Auto-commit: $(date '+%Y-%m-%d %H:%M:%S')"}
+    local final_msg="$commit_prefix $evaluated_message"
     
     git add .
     git commit -m "$final_msg"
