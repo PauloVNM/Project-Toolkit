@@ -1,0 +1,1 @@
+mkdir -p ~/.local/bin && curl -sSL https://raw.githubusercontent.com/PauloVNM/Project-Toolkit/main/Toolkit.sh -o ~/.local/bin/toolkit && chmod +x ~/.local/bin/toolkit

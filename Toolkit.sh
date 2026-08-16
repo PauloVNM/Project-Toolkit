@@ -51,6 +51,39 @@ setup_gitignore() {
 }
 
 # ==========================================
+# Maintenance Functions
+# ==========================================
+
+update_toolkit() {
+    print_header "Atualizar Ferramenta"
+    
+    echo "Buscando atualizações no GitHub..."
+    print_separator
+    
+    local temp_file="/tmp/toolkit_update.sh"
+    local url="https://raw.githubusercontent.com/PauloVNM/Project-Toolkit/main/Toolkit.sh"
+    
+    # Baixa o arquivo silenciosamente, mas mostra erros se falhar (-sSLf)
+    if curl -sSLf "$url" -o "$temp_file"; then
+        # Substitui o script em execução ($0) pelo novo arquivo baixado
+        mv "$temp_file" "$0"
+        chmod +x "$0"
+        
+        echo "Atualização concluída com sucesso!"
+        echo "O Toolkit será reiniciado automaticamente."
+        sleep 2
+        
+        # O comando 'exec' substitui o processo atual pelo novo script, 
+        # reiniciando a ferramenta de forma limpa.
+        exec "$0" "$@"
+    else
+        echo "Erro: Falha ao tentar conectar com o GitHub ou baixar a atualização."
+        echo "Verifique sua conexão de rede."
+        pause_prompt
+    fi
+}
+
+# ==========================================
 # Git Functions
 # ==========================================
 
@@ -926,6 +959,7 @@ main_menu() {
         print_header "Project Toolkit"
         echo "1. Git Management"
         echo "2. Documentation Tools"
+        echo "3. Atualizar Ferramenta"
         echo "[ESC] Sair"
         echo "=============================="
         echo -n "Escolha uma opção: "
@@ -948,6 +982,7 @@ main_menu() {
         case $selection in
             1) git_menu ;;
             2) docs_menu ;;
+            3) update_toolkit ;;
             *) echo -e "\nOpção inválida."; sleep 1 ;;
         esac
     done
