@@ -105,32 +105,37 @@ init_repository() {
     pause_prompt
 }
 
-link_remote() {
-    print_header "Vincular ou Alterar Repositório Remoto"
-    
-    check_git_repo || return
+clone_repository() {
+    print_header "Clonar Repositório Remoto"
 
-    while true; do
-        local url
-        read -p "Digite a URL remota (ou vazio para cancelar): " url
-        
-        if [ -z "$url" ]; then
-            break
-        fi
-        
-        if git ls-remote "$url" > /dev/null 2>&1; then
-            if git remote | grep -q "^origin$"; then
-                git remote set-url origin "$url"
-            else
-                git remote add origin "$url"
-            fi
-            echo "Repositório remoto vinculado."
-            break
-        else
-            echo "Erro: Repositório inacessível."
-        fi
-    done
-    
+    # Verifica se já estamos dentro de um repositório, pois não devemos clonar um projeto dentro de outro.
+    if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+        echo "Aviso: Você já está dentro de um repositório Git."
+        echo "Saia deste diretório (use 'cd ..') para clonar um novo projeto."
+        pause_prompt
+        return
+    fi
+
+    local url
+    read -p "Digite a URL do repositório (ou vazio para cancelar): " url
+
+    if [ -z "$url" ]; then
+        return
+    fi
+
+    echo "Clonando repositório..."
+    print_separator
+
+    if git clone "$url"; then
+        print_separator
+        echo "Repositório clonado com sucesso."
+        echo "IMPORTANTE: Lembre-se de acessar a nova pasta gerada (cd nome-do-projeto) antes de continuar."
+    else
+        print_separator
+        echo "Erro: Falha ao clonar o repositório."
+        echo "Verifique a URL, permissões de acesso e sua conexão de rede."
+    fi
+
     pause_prompt
 }
 
@@ -323,7 +328,23 @@ manage_state() {
                 ;;
             3)
                 echo ""
-                link_remote
+                if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+                    local new_url
+                    read -p "Nova URL remota (vazio para cancelar): " new_url
+                    if [[ -n "$new_url" ]]; then
+                        # Verifica se a origem existe para atualizar, senão adiciona
+                        if git remote | grep -q "^origin$"; then
+                            git remote set-url origin "$new_url"
+                        else
+                            git remote add origin "$new_url"
+                        fi
+                        echo "URL do repositório remoto atualizada."
+                        sleep 1
+                    fi
+                else
+                    echo "Erro: Você precisa estar dentro de um repositório Git."
+                    sleep 1
+                fi
                 ;;
             4)
                 echo ""
@@ -884,7 +905,7 @@ git_menu() {
     while true; do
         print_header "Git Management"
         echo "1. Iniciar Repositório Local"
-        echo "2. Vincular ou Alterar Rep. Remoto"
+        echo "2. Clonar Repositório Remoto"
         echo "3. Receber Atualizações (Pull)"
         echo "4. Enviar Atualizações (Push)"
         echo "5. Gerenciar Estado do Repositório"
@@ -905,7 +926,7 @@ git_menu() {
 
         case $selection in
             1) init_repository ;;
-            2) link_remote ;;
+            2) clone_repository ;;  # <<< ATUALIZADO AQUI
             3) pull_updates ;;
             4) push_updates ;;
             5) manage_state ;;
