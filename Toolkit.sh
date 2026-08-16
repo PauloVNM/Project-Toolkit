@@ -41,6 +41,7 @@ setup_gitignore() {
         {
             echo "# === Toolkit Protection ==="
             echo "$script_name"
+            echo "development-method.md"
             echo "ai-context-docs.txt"
             echo "ai-context-code.txt"
             echo "# =========================="
@@ -367,6 +368,8 @@ init_documentation() {
         "api.md"
         "frontend.md"
         "decisions.md"
+        "features.md"
+        "infrastructure.md"
     )
 
     echo "Verificando arquivos internos..."
@@ -392,15 +395,39 @@ update_project_gitignore() {
     pause_prompt
 }
 
-show_documentation_model() {
-    clear
-    echo "================================================================="
-    echo "                 Modelo Estrutural de Documentação"
-    echo "================================================================="
-cat << 'EOF'
+generate_development_method() {
+    print_header "Gerar Documento de Metodologia"
+    
+    local file_name="development-method.md"
+
+    if [ -f "$file_name" ]; then
+        echo "[=] O arquivo '$file_name' já existe na raiz do projeto."
+    else
+        echo "Criando '$file_name'..."
+        
+        cat << 'EOF' > "$file_name"
+# Development Method
+
+Este documento define o método de desenvolvimento utilizado pelo projeto e funciona como contexto operacional para chats que participam de descoberta, documentação, viabilidade, desenvolvimento e auditoria.
+
+As regras abaixo têm precedência operacional sobre interpretações implícitas dos diagramas. Os diagramas representam o fluxo visual; as instruções complementam o comportamento esperado de cada etapa.
+
+## Regras Gerais
+
+- O operador é a autoridade final sobre requisitos, decisões, arquitetura, implementação e mudanças no projeto.
+- A IA deve distinguir fatos fornecidos, decisões validadas, hipóteses e pontos ainda não definidos. Não deve preencher lacunas com invenções.
+- Quando uma nova informação entrar em conflito com documentação ou decisão já validada, o conflito deve ser explicitado antes de qualquer alteração relevante.
+- A documentação estrutural deve manter rastreabilidade entre regras de negócio, requisitos, features e áreas afetadas do sistema sempre que essa relação existir.
+- O idioma de conversação primária entre operador e IA é português, salvo instrução explícita em contrário.
+
+---
+
+# 1. Documentation Model
+
+```text
 project/
 │
-├── README.md                           # Entrada principal do projeto (comandos básicos e atalho para a doc)
+├── README.md                           # Entrada principal do projeto (comandos básicos, atalhos para docs e mapa de leitura para IAs)
 │
 ├── docs/                               # Documentação central do projeto
 │   ├── product.md                      # O produto e o problema de negócio (O Porquê)
@@ -408,12 +435,21 @@ project/
 │   │   ├── scope                       # O que o sistema faz (MVP) e o que não faz
 │   │   ├── actors                      # Quem interage com o sistema (usuários, sistemas externos)
 │   │   ├── glossary                    # Dicionário de termos do negócio (Linguagem Ubíqua)
-│   │   ├── business-rules              # Regras puras do mundo real, independentes da tecnologia (existem mesmo que o sistema não existisse)
-│   │   ├── requirements                # Requisitos Funcionais (RF) e Não Funcionais (RNF)
+│   │   ├── business-rules              # Regras puras do mundo real (ex: BR-01, BR-02), independentes de tecnologia
+│   │   ├── requirements                # Requisitos Funcionais indexados (ex: RF-01, RF-02) e Não Funcionais (ex: RNF-01, RNF-02)
 │   │       ├── diagram: use-case       # Diagrama de Caso de Uso (Atores x Use Cases)
 │   │       └── diagram: flowchart      # Diagrama de Fluxograma da Jornada (User Flow)
 │   │
-│   ├── architecture.md                 # Arquitetura do sistema (Visão MACRO) — ver também: database.md, backend.md, frontend.md (MICRO)
+│   ├── features.md                     # Rastreabilidade de Entregas, Limites de Escopo e Raio de Impacto (A Execução)
+│   │   ├── modules-registry            # Mapeamento formal dos Módulos do sistema (ex: auth, billing, notification)
+│   │   └── feature-backlog             # Detalhamento por Feature (ex: FEAT-01, FEAT-02):
+│   │       ├── requirements-mapping    # IDs exatos dos requisitos atendidos (ex: RF-01, RF-02, RNF-04)
+│   │       ├── target-modules          # Módulos do código afetados diretamente pela entrega
+│   │       ├── scope-boundaries        # Gatilho de início (Trigger) e Critério de término (Definition of Done) para cada Feature
+│   │       ├── impact-radius           # Locais exatos tocados (tabelas em database.md, rotas/classes em backend.md, telas em frontend.md)
+│   │       └── git-guidelines          # Nome da branch recomendada (ex: feature/FEAT-01-login) e mensagens de commit atômicos
+│   │
+│   ├── architecture.md                 # Arquitetura do sistema (Visão MACRO) — ver também: database.md, backend.md, frontend.md, infrastructure.md (MICRO)
 │   │   ├── overview                    # Resumo arquitetural em alto nível
 │   │   │   ├── diagram: component      # Diagrama em texto dos grandes blocos do sistema
 │   │   │   └── diagram: sequence       # Fluxo macro de comunicação entre os blocos
@@ -422,7 +458,17 @@ project/
 │   │   ├── frontend                    # O papel da interface no contexto geral (MACRO; detalhe técnico em frontend.md)
 │   │   ├── database                    # O tipo de banco escolhido e o motivo em alto nível (MACRO; detalhe técnico em database.md)
 │   │   ├── security                    # Estratégia geral de proteção do sistema
-│   │   └── deployment                  # Onde e como o sistema é publicado
+│   │   └── infrastructure              # Estratégia geral de hospedagem e CI/CD (MACRO; detalhe técnico em infrastructure.md)
+│   │
+│   ├── infrastructure.md               # Operação, Servidor e CI/CD (Visão MICRO de architecture.md > infrastructure)
+│   │   ├── environment                 # Tipo de ambiente (VPS, Bare Metal, Cloud, Container)
+│   │   ├── hardware-specs              # Especificações de recursos (CPU, RAM, Disco, Rede)
+│   │   ├── system-software             # Sistema Operacional (ex: Debian), runtime, servidores web (Nginx), Docker, etc.
+│   │   ├── pipeline                    # Esteira de CI/CD (Gatilhos, etapas de Build, Testes e Deploy)
+│   │   │   └── diagram: sequence       # Fluxo da esteira (Push -> Runner -> Build -> Server)
+│   │   ├── environment-variables       # Lista de variáveis necessárias (sem expor segredos/senhas)
+│   │   ├── logs-and-monitoring         # Onde encontrar logs do sistema/aplicação e checagens de status
+│   │   └── rollback                    # Procedimento manual ou automático para reverter versões com falha
 │   │
 │   ├── domain.md                       # Modelo de domínio (As Peças do Tabuleiro)
 │   │   ├── entities                    # Os objetos principais do negócio
@@ -460,7 +506,7 @@ project/
 │   │   └── examples                    # Exemplos práticos de chamadas (usando dados fictícios)
 │   │
 │   ├── frontend.md                     # Estrutura visual e interface (Visão MICRO de architecture.md > frontend)
-│   │   ├── structure                   # Organização física de páginas, componentes e assets
+│   │   ├── structure                   # Organização física de páginas, components e assets
 │   │   ├── routing                     # Navegação do cliente e proteção de rotas visuais
 │   │   ├── components                  # Regras, nomenclatura e responsabilidade de componentes
 │   │   ├── state-management            # Onde informações temporárias são guardadas (local vs global)
@@ -474,7 +520,225 @@ project/
 │       ├── abstractions                # Decisões sobre o que foi deliberadamente simplificado, deixado de fora ou não abstraído
 │       ├── security-tradeoffs          # Riscos aceitos, proteções ignoradas e cenários onde atalhos temporários foram assumidos
 │       └── rejected-ideas              # Alternativas que foram consideradas e descartadas, poupando o tempo de reavaliá-las no futuro
+```
+
+## Purpose
+
+O bloco abaixo é o modelo estrutural que o Chat de Documentação deve utilizar como base para construir a documentação do projeto.
+
+A estrutura não deve ser tratada como uma sugestão genérica. Ela define os artefatos esperados para o projeto e deve ser respeitada durante a construção documental.
+
+## Documentation Generation Rules
+
+1. Cada arquivo `.md` deve ser gerado individualmente.
+2. Todos os tópicos definidos no modelo devem ser preenchidos sempre que houver informação suficiente para isso.
+3. Quando um tópico não puder ser preenchido com segurança, sua ausência deve ser justificada em `decisions.md`. A IA não deve inventar informações apenas para eliminar uma seção vazia.
+4. A documentação deve ser escrita em inglês somente na versão final.
+5. Durante a descoberta, discussão e validação, a documentação primária permanece em português.
+6. A tradução para inglês ocorre somente depois que o operador considerar o conteúdo validado.
+7. Preserve os identificadores já existentes e mantenha consistência entre referências cruzadas.
+8. Quando uma informação estiver relacionada a um requisito, regra, feature ou decisão já identificada, utilize seu identificador correspondente.
+9. Ao produzir qualquer estrutura que contenha Fenced Code Blocks, envolva a resposta completa em um bloco externo de quatro crases, usando blocos internos de três crases para os conteúdos individuais.
+
+## Documentation Flow
+
+O Chat de Documentação recebe o contexto inicial da conversa com o cliente e o modelo estrutural completo. Ele é responsável por transformar a discussão em documentação progressivamente estruturada.
+
+O Chat de Viabilidade/Stack não recebe automaticamente o contexto documental completo. Ele permanece como apoio técnico para esclarecer dúvidas, avaliar viabilidade, discutir tecnologias e auxiliar o operador na tomada de decisões técnicas. Suas conclusões só passam a integrar a documentação quando forem validadas pelo operador e incorporadas ao fluxo documental.
+
+O conteúdo abaixo representa o fluxo esperado.
+
+```mermaid
+flowchart TD
+    %% Definição de Estilos para simplicidade e clareza
+    classDef dev fill:#2d3436,stroke:#dfe6e9,stroke-width:2px,color:#fff;
+    classDef input fill:#0984e3,stroke:#74b9ff,stroke-width:2px,color:#fff;
+    classDef chatDoc fill:#6c5ce7,stroke:#a29bfe,stroke-width:2px,color:#fff;
+    classDef chatTech fill:#e84393,stroke:#fd79a8,stroke-width:2px,color:#fff;
+    classDef chatDecision fill:#d63031,stroke:#ff7675,stroke-width:2px,color:#fff;
+    classDef docs fill:#00b894,stroke:#55efc4,stroke-width:2px,color:#fff;
+
+    %% Atores e Artefatos
+    Dev((Desenvolvedor)):::dev
+    Contexto[/Conversa com o Cliente / Contexto Inicial/]:::input
+    Modelos[(Modelos de Documentação\nToolkit)]:::docs
+
+    %% Fluxo de Descoberta
+    subgraph Fluxo_Descoberta [Fluxo de Descoberta e Planejamento]
+        direction TB
+
+        ChatDoc["📝 Chat de Documentação\n(Foco no negócio, regras e\npreenchimento iterativo da documentação)"]:::chatDoc
+
+        ChatTech["🛠️ Chat de Stack e Viabilidade\n(Foco técnico, viabilidade, arquitetura\ne decisões de tecnologia)"]:::chatTech
+
+        ChatDecision["🧠 Chat de Decisions\n(Consolidação das decisões e seus motivos\na partir das conversações de descoberta)"]:::chatDecision
+    end
+
+    %% Relações e Fluxos de Informação
+    Contexto -->|"Fornece a base do problema"| Dev
+    Modelos -.->|"Fornece os modelos necessários"| Dev
+
+    %% Entrada nos chats de descoberta
+    Dev -->|"1. Insere contexto e discute o negócio"| ChatDoc
+    Dev -->|"2. Insere contexto e debate a solução técnica"| ChatTech
+
+    %% Produção documental
+    ChatDoc -->|"3. Retorna documentação de descoberta\n(product, features, architecture, etc.)"| Dev
+    ChatTech -->|"4. Retorna análises, viabilidade e decisões técnicas"| Dev
+
+    %% Consolidação das decisões
+    ChatDoc -.->|"Fornece a conversação completa"| ChatDecision
+    ChatTech -.->|"Fornece a conversação completa"| ChatDecision
+
+    ChatDecision -->|"5. Extrai decisões, justificativas,\ntrade-offs e alternativas rejeitadas"| Decisions
+    Decisions["decisions.md"]:::docs
+```
+
+---
+
+# 2. Development Flow Documentation
+
+## Purpose
+
+O fluxo abaixo representa o processo operacional utilizado para transformar uma ideia validada em uma alteração implementável.
+
+O processo deve seguir convenções amplamente utilizadas em ambientes profissionais de desenvolvimento, priorizando legibilidade, consistência, manutenção, rastreabilidade e baixo acoplamento desnecessário.
+
+## Development Rules
+
+1. Ao gerar código, estruturas de projeto ou exemplos técnicos, utilize convenções amplamente adotadas no mercado.
+2. Utilize inglês para nomes de variáveis, funções, classes, arquivos, tabelas, APIs, commits de exemplo e demais elementos técnicos, salvo quando houver motivo explícito para outro idioma.
+3. Comentários de código também devem permanecer em inglês.
+4. Tudo que será efetivamente exibido ao usuário final deve permanecer em português. Isso inclui textos de interface, mensagens do sistema, notificações, mensagens externas, e-mails, alertas e demais textos apresentados ao usuário.
+5. O código deve priorizar clareza, previsibilidade, manutenção e aderência às convenções do ecossistema utilizado.
+6. O operador permanece responsável pela validação da implementação. O chat de execução não substitui revisão humana.
+
+## Flow Context
+
+O fluxo recebe a documentação já construída e validada como base de contexto. O operador conduz a conversa de desenvolvimento conforme o diagrama abaixo.
+
+O Chat de Conversação possui visão completa do projeto e é utilizado para debate, arquitetura, segurança, alternativas e ideias de implementação.
+
+O Chat de Impacto recebe uma ideia já validada pelo operador e transforma essa ideia em análise de impacto, rastreabilidade e prompt de execução.
+
+O Chat de Execução possui contexto deliberadamente restrito. Ele deve atuar de maneira estrita sobre o prompt recebido e o contexto técnico fornecido, sem assumir contexto global que não tenha sido explicitamente disponibilizado.
+
+O fluxo visual abaixo define a sequência operacional.
+
+```mermaid
+flowchart TD
+    %% Definição de Estilos para simplicidade e clareza
+    classDef dev fill:#2d3436,stroke:#dfe6e9,stroke-width:2px,color:#fff;
+    classDef project fill:#0984e3,stroke:#74b9ff,stroke-width:2px,color:#fff;
+    classDef chatConv fill:#00b894,stroke:#55efc4,stroke-width:2px,color:#fff;
+    classDef chatImp fill:#d63031,stroke:#ff7675,stroke-width:2px,color:#fff;
+    classDef chatExec fill:#e17055,stroke:#fab1a0,stroke-width:2px,color:#fff;
+
+    %% Atores Principais
+    Dev((Desenvolvedor)):::dev
+    Project[(Repositório)]:::project
+
+    %% Os Três Chats
+    subgraph Fluxo_Tri_Chat [Fluxo de Desenvolvimento Isolado]
+        direction TB
+        
+        ChatConv["💬 Chat de Conversação\n(Visão Externa, Segurança, Ideias de Implementação)\n[Tem Contexto Total]"]:::chatConv
+        
+        ChatImp["🛡️ Chat de Impacto\n(Análise de Risco, Rastreabilidade, Criação de Prompt)\n[Tem Contexto Total]"]:::chatImp
+        
+        ChatExec["⚙️ Chat de Execução\n(Apenas Código, Obediência Estrita)\n[Zero Contexto Global]\n[Ou 'ai-context-code.txt' apenas] "]:::chatExec
+    end
+
+    %% Relações e Fluxos de Informação
+    Dev <-->|"1. Debate possibilidades e validação arquitetura"| ChatConv
+    
+    Dev -->|"2. Submete ideia validada (Toolkit)"| ChatImp
+    ChatImp -->|"3. Retorna Relatório de Impacto + Prompt"| Dev
+    
+    Dev -->|"4. Copia e cola o Prompt"| ChatExec
+    ChatExec -->|"5. Retorna o Código exato"| Dev
+    
+    Dev -->|"6. Implementa, realiza testes locais e commita"| Project
+```
+
+---
+
+# 3. Development Documentation Loop
+
+## Purpose
+
+O loop de documentação existe para verificar continuamente se a implementação permanece alinhada à documentação e às decisões válidas do projeto.
+
+Ele deve ser executado após a conclusão do fluxo médio de desenvolvimento, utilizando os contextos consolidados de documentação e código gerados pelo Toolkit.
+
+## Loop Rules
+
+1. O Toolkit deve consolidar o contexto documental e o contexto de código antes da auditoria.
+2. O Chat de Validação e Auditoria recebe o contexto completo necessário para comparar documentação e implementação.
+3. A auditoria deve identificar divergências, inconsistências, lacunas ou alterações não refletidas entre documentação e código.
+4. Quando a documentação estiver desatualizada, ela deve ser ajustada ao estado real do código, desde que não exista decisão validada que determine o contrário.
+5. Quando o código estiver desalinhado com a documentação validada, a implementação deve retornar ao fluxo de desenvolvimento para nova análise de impacto e execução.
+6. O loop só termina quando o operador considerar que implementação e documentação estão sincronizadas.
+7. O retorno ao fluxo de desenvolvimento deve preservar o contexto necessário para que a nova alteração seja tratada como uma mudança consciente, e não como uma correção silenciosa.
+
+O diagrama abaixo representa o fechamento do ciclo.
+
+```mermaid
+flowchart TD
+    %% Definição de Estilos
+    classDef dev fill:#2d3436,stroke:#dfe6e9,stroke-width:2px,color:#fff;
+    classDef toolkit fill:#0984e3,stroke:#74b9ff,stroke-width:2px,color:#fff;
+    classDef chatAudit fill:#e84393,stroke:#fd79a8,stroke-width:2px,color:#fff;
+    classDef decision fill:#fdcb6e,stroke:#e17055,stroke-width:2px,color:#000;
+    classDef endFlow fill:#00b894,stroke:#55efc4,stroke-width:2px,color:#fff;
+    classDef loopFlow fill:#d63031,stroke:#ff7675,stroke-width:2px,color:#fff;
+
+    %% Atores e Ferramentas
+    Dev((Desenvolvedor)):::dev
+    Toolkit["🛠️ Toolkit.sh\n(generate_docs_context +\ngenerate_code_context)"]:::toolkit
+
+    %% Chat Principal da Etapa
+    ChatAudit["🔍 Chat de Validação e Auditoria\n[Recebe Contexto Total: Código + Documentação]\nAnálise comparativa de alinhamento"]:::chatAudit
+
+    %% Decisões e Fins
+    DecisaoAlinhamento{"Código e Documentação\nestão 100% alinhados?"}:::decision
+    DecisaoAjuste{"Quem deve se adequar?"}:::decision
+    
+    Fim["✅ Fim do Fluxo\n(Aplicação e Documentação Sincronizadas)"]:::endFlow
+    
+    NovoFluxo["🔄 Retorno ao Fluxo Médio\n(Chat atual vira Novo Chat de Impacto;\nCria-se Novo Chat Executor e Conversação)"]:::loopFlow
+
+    %% Fluxo de Execução
+    Dev -->|"1. Executa extração após finalizar o fluxo medio"| Toolkit
+    Toolkit -->|"2. Alimenta com os .txt consolidados"| ChatAudit
+    ChatAudit -->|"3. Analisa relatório de divergências"| DecisaoAlinhamento
+    
+    DecisaoAlinhamento -->|"Sim (Tudo pronto)"| Fim
+    DecisaoAlinhamento -->|"Não (IA identificou desvios)"| DecisaoAjuste
+    
+    DecisaoAjuste -->|"Opção A: Documentação se adequa ao Código\n(O próprio Chat de Auditoria ajusta os .md)"| Fim
+    DecisaoAjuste -->|"Opção B: Código se adequa à Documentação\n(Necessário refatorar a aplicação)"| NovoFluxo
+```
+
+---
+
+# Operational Intent
+
+Este documento deve ser tratado pelos chats como uma definição de método de trabalho, e não como uma documentação específica de um projeto.
+
+O objetivo é manter consistência entre:
+
+`business context -> documentation -> technical discussion -> impact analysis -> implementation -> human validation -> audit -> synchronization`
+
+A IA deve apoiar o processo sem substituir o operador como autoridade sobre as decisões do projeto.
 EOF
+        
+        echo "[+] Arquivo '$file_name' criado com sucesso."
+        
+        # Garante a proteção no .gitignore logo após a criação
+        setup_gitignore
+    fi
+    
     pause_prompt
 }
 
@@ -623,7 +887,7 @@ docs_menu() {
         print_header "Documentation Tools"
         echo "1. Iniciar Documentação"
         echo "2. Atualizar .gitignore (Projetos Existentes)"
-        echo "3. Exibir Modelo de Referência"
+        echo "3. Gerar Documento de Metodologia"
         echo "4. Gerar Contexto para IA (Documentação)"
         echo "5. Gerar Contexto para IA (Código)"
         echo "[ESC] Voltar ao Menu Principal"
@@ -644,7 +908,7 @@ docs_menu() {
         case $selection in
             1) init_documentation ;;
             2) update_project_gitignore ;;
-            3) show_documentation_model ;;
+            3) generate_development_method ;;
             4) generate_docs_context ;;
             5) generate_code_context ;;
             *) echo -e "\nOpção inválida."; sleep 1 ;;
