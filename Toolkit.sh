@@ -838,21 +838,18 @@ generate_code_context() {
 
     check_git_repo || return
 
-    # Identifica os diretórios de código-fonte e estáticos
+    # Diretórios candidatos a compor o contexto técnico
+    local candidate_dirs=("src" "source" "frontend" "public" "client")
     local target_dirs=()
-    
-    if [[ -d "public" ]]; then
-    target_dirs+=("public")
-    fi
 
-    if [[ -d "src" ]]; then
-        target_dirs+=("src")
-    elif [[ -d "source" ]]; then
-        target_dirs+=("source")
-    fi
+    for dir in "${candidate_dirs[@]}"; do
+        if [[ -d "$dir" ]]; then
+            target_dirs+=("$dir")
+        fi
+    done
 
     if [[ ${#target_dirs[@]} -eq 0 ]]; then
-        echo "Erro: Nenhum diretório 'src', 'source' ou 'public' encontrado."
+        echo "Erro: Nenhum diretório de código ('src', 'frontend', etc.) encontrado."
         pause_prompt
         return
     fi
@@ -867,21 +864,33 @@ generate_code_context() {
     echo "Consolidando arquivos de código..."
     echo "================ SOURCE CODE ====================" >> "$context_file"
 
-    # Inclui explicitamente o .gitignore para dar contexto sobre o ambiente (ex: .env, pastas de build)
-    if [[ -f .gitignore ]]; then
-        echo -e "\n--- File: .gitignore ---\n" >> "$context_file"
-        cat .gitignore >> "$context_file"
-    fi
+    # Arquivos raiz indispensáveis para contexto de arquitetura e dependências
+    local root_files=(".gitignore" "package.json")
+    for rfile in "${root_files[@]}"; do
+        if [[ -f "$rfile" ]]; then
+            echo -e "\n--- File: $rfile ---\n" >> "$context_file"
+            cat "$rfile" >> "$context_file"
+        fi
+    done
 
-    # Itera sobre os diretórios encontrados e captura arquivos não ignorados
+    # Extensões binárias ignoradas para não corromper o texto
+    local binary_exts="png|jpg|jpeg|gif|ico|webp|svgz|pdf|woff|woff2|ttf|eot|mp4|zip"
+
+    # Itera sobre os diretórios identificados
     for dir in "${target_dirs[@]}"; do
-        local files=($(git ls-files --cached --others --exclude-standard "$dir/"))
+        local files=()
+        mapfile -t files < <(git ls-files --cached --others --exclude-standard "$dir/")
         
         if [[ ${#files[@]} -eq 0 ]]; then
             echo "Nenhum arquivo válido encontrado em '$dir/'."
         else
             for file in "${files[@]}"; do
                 if [[ -f "$file" ]]; then
+                    # Pula arquivos binários conhecidos
+                    if [[ "$file" =~ \.($binary_exts)$ ]]; then
+                        continue
+                    fi
+                    
                     echo -e "\n--- File: $file ---\n" >> "$context_file"
                     cat "$file" >> "$context_file"
                 fi
