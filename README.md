@@ -57,7 +57,7 @@ No Git Bash, a pasta `~/bin` (localizada em `C:\Users\<SeuUsuario>\bin`) já é 
 Abra o terminal do **Git Bash** (ou use o perfil Git Bash no terminal integrado do VS Code) e execute:
 
 ```bash
-mkdir -p ~/bin && curl -sSL [https://raw.githubusercontent.com/PauloVNM/Project-Toolkit/main/Toolkit.sh](https://raw.githubusercontent.com/PauloVNM/Project-Toolkit/main/Toolkit.sh) -o ~/bin/toolkit
+mkdir -p ~/bin && curl -sSL https://raw.githubusercontent.com/PauloVNM/Project-Toolkit/main/Toolkit.sh https://raw.githubusercontent.com/PauloVNM/Project-Toolkit/main/Toolkit.sh -o ~/bin/toolkit
 ```
 
 #### Configuração do PATH no Windows (se necessário)
