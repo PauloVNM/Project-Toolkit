@@ -1496,6 +1496,7 @@ Quando o código estiver desalinhado com uma decisão ou definição válida, en
 Não altere silenciosamente o significado de uma decisão para justificar o estado atual do código.
 
 O loop somente deve ser considerado concluído quando não houver divergências relevantes ou quando o operador validar explicitamente o estado sincronizado.
+```
 EOF
         
         echo "[+] Arquivo '$file_name' criado com sucesso."
